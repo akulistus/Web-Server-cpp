@@ -47,26 +47,46 @@ bool DBHelper::isValidDateTime(const std::string& date, const std::string& time)
     std::tm dateStruct = {};
 
     std::sscanf(date.c_str(), "%d.%d.%d", &dateStruct.tm_mday, &dateStruct.tm_mon, &dateStruct.tm_year);
+    std::sscanf(time.c_str(), "%d:%d", &dateStruct.tm_hour, &dateStruct.tm_min);
 
     dateStruct.tm_year -= 1900;
     dateStruct.tm_mon -= 1;
 
-    // Convert the struct tm to time_t
     std::time_t tmptime = std::mktime(&dateStruct);
     dateStruct.tm_yday = std::localtime(&tmptime)->tm_yday;
-    std::cout << dateStruct.tm_yday <<std::endl;
 
     
     std::time_t currentTime = std::time(nullptr);
     std::tm* localTime = std::localtime(&currentTime);
     
-    // std::cout << tmDate.tm_year << std::endl;
-    // std::cout << std::localtime(&currentDate)->tm_year << std::endl;
-    // std::cout << tmTime.tm_hour << std::endl;
-    if ( (localTime->tm_yday - dateStruct.tm_yday < 0) || (dateStruct.tm_year > localTime->tm_year) ) {
-
+    if ( (dateStruct.tm_yday - localTime->tm_yday >= 0) || (dateStruct.tm_year > localTime->tm_year) ) {
+        if ((dateStruct.tm_hour >= localTime->tm_hour) && (dateStruct.tm_yday == localTime->tm_yday)) {
+            std::cout << "here" << std::endl;
+            return true;
+        }
     }
-    return 1;
+    return false;
+}
+
+bool DBHelper::isValidDate(const std::string& date, const int state) {
+    std::tm dateStruct = {};
+
+    std::sscanf(date.c_str(), "%d.%d.%d", &dateStruct.tm_mday, &dateStruct.tm_mon, &dateStruct.tm_year);
+
+    dateStruct.tm_year -= 1900;
+    dateStruct.tm_mon -= 1;
+
+    std::time_t tmptime = std::mktime(&dateStruct);
+    dateStruct.tm_yday = std::localtime(&tmptime)->tm_yday;
+
+    
+    std::time_t currentTime = std::time(nullptr);
+    std::tm* localTime = std::localtime(&currentTime);
+
+    if ((dateStruct.tm_yday - localTime->tm_yday >= 0) || (dateStruct.tm_year > localTime->tm_year) || (state == 1) ){
+        return true;
+    }
+    return false;
 }
 
 bool DBHelper::checkDateTime(std::string date, std::string time)
@@ -109,16 +129,17 @@ nlohmann::json DBHelper::getAll()
             const char* fieldType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
             const char* fieldForw = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
 
+            //Почемну не могу вернуть nullptr
             if (isValidDateTime(fieldDate, fieldTime)) {
                 arr.push_back({
                     {"state", fieldState},
                     {"date", fieldDate},
                     {"time", fieldTime},
-                    {"name", fieldName},
-                    {"surname", fieldSurname},
-                    {"patronymic", fieldPatr},
-                    {"type", fieldType},
-                    {"forwarded", fieldForw}
+                    {"name", fieldName != nullptr ? fieldName : "NULL"},
+                    {"surname", fieldSurname != nullptr ? fieldSurname : "NULL"},
+                    {"patronymic", fieldPatr != nullptr ? fieldPatr : "NULL"},
+                    {"type", fieldType != nullptr ? fieldType : "NULL"},
+                    {"forwarded", fieldForw != nullptr ? fieldForw : "NULL"}
                 });
             }
         }
@@ -200,185 +221,195 @@ bool DBHelper::changeState(std::string name,
     return success;
 }
 
-// nlohmann::json DBHelper::getAllDates()
-// {
-//     //db.setDatabaseName("./calendar.sqlite");
-//     if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
-//         std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
-//         sqlite3_close(db);
-//     }
+nlohmann::json DBHelper::getAllDates()
+{
+    if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
+        std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+    }
 
-//     sqlite3_stmt* stmt;
+    sqlite3_stmt* stmt;
 
-//     std::string sqlRequest = "SELECT * FROM calendar";
+    std::string sqlRequest = "SELECT * FROM calendar";
 
-//     if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
-//         while (sqlite3_step(stmt) == SQLITE_ROW) {
+    std::unordered_map<std::string, int> hash;
 
-//         }
-//     }
-//     int fieldState = query.record().indexOf("state");
-//     int fieldDate = query.record().indexOf("date");
-//     QHash<std::string, std::string> hash;
-//     while (query.next()) {
-//         std::string state = query.value(fieldState).toString();
-//         std::string date = query.value(fieldDate).toString();
-//         if (!(QDate::fromString(date, "d.MM.yyyy").dayOfYear() - QDate::currentDate().dayOfYear()
-//               < 0)
-//             || (QDate::fromString(date, "d.MM.yyyy").year() > QDate::currentDate().year())
-//             || state == "1") {
-//             if (hash.keys().contains(date)) {
-//                 if (state == "1")
-//                     hash[date] = "1";
-//             } else
-//                 hash.insert(date, state);
-//         }
-//     }
-//     nlohmann::json qjo;
-//     foreach (std::string date, hash.keys())
-//         qjo.insert(date, hash[date]);
-//     db.close();
-//     return QJsonDocument(qjo);
-// }
+    if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int fieldState = sqlite3_column_int(stmt, 1);
+            const char* fieldDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
 
-// nlohmann::json DBHelper::getFree()
-// {
-//     //db.setDatabaseName("./calendar.sqlite");
-//     db.open();
-//     QSqlQuery query(db);
-//     query.exec("SELECT * FROM calendar");
-//     int fieldState = query.record().indexOf("state");
-//     int fieldDate = query.record().indexOf("date");
-//     int fieldTime = query.record().indexOf("time");
-//     QMultiHash<std::string, std::string> hash;
-//     while (query.next()) {
-//         std::string state = query.value(fieldState).toString();
-//         if (state.toInt() == 0) {
-//             std::string date = query.value(fieldDate).toString();
-//             std::string time = query.value(fieldTime).toString();
-//             if (!(QDate::fromString(date, "d.MM.yyyy").dayOfYear() - QDate::currentDate().dayOfYear()
-//                   < 0)
-//                 || (QDate::fromString(date, "d.MM.yyyy").year() > QDate::currentDate().year()))
-//                 if (!(QTime::fromString(time, "hh:mm").hour() - QTime::currentTime().hour() <= 0
-//                       && QDate::fromString(date, "d.MM.yyyy").dayOfYear()
-//                              == QDate::currentDate().dayOfYear()))
-//                     hash.insert(date, time);
-//         }
-//     }
-//     nlohmann::json qjo;
-//     foreach (std::string date, hash.keys()) {
-//         QList<std::string> values = hash.values(date);
-//         QJsonArray arr;
-//         values.sort();
-//         foreach (std::string val, values) {
-//             arr.append(val);
-//         }
-//         qjo.insert(date, arr);
-//     }
-//     db.close();
-//     return QJsonDocument(qjo);
-// }
+            if (isValidDate(fieldDate, fieldState)){
+                hash[fieldDate] = fieldState;
+            }
+        }
 
-// nlohmann::json DBHelper::getDay(std::string date)
-// {
-//     //db.setDatabaseName("./calendar.sqlite");
-//     db.open();
-//     QSqlQuery query(db);
-//     query.prepare("SELECT * FROM calendar WHERE date = ?");
-//     query.bindValue(0, date);
-//     query.exec();
-//     QJsonArray arr;
-//     int fieldState = query.record().indexOf("state");
-//     int fieldTime = query.record().indexOf("time");
-//     int fieldName = query.record().indexOf("name");
-//     int fieldSurname = query.record().indexOf("surname");
-//     int fieldPatr = query.record().indexOf("patronymic");
-//     int fieldType = query.record().indexOf("type");
-//     int fieldForw = query.record().indexOf("forwarded");
-//     while (query.next()) {
-//         std::string state = query.value(fieldState).toString();
-//         std::string time = query.value(fieldTime).toString();
-//         std::string name = query.value(fieldName).toString();
-//         std::string surname = query.value(fieldSurname).toString();
-//         std::string patronymic = query.value(fieldPatr).toString();
-//         std::string type = query.value(fieldType).toString();
-//         std::string forw = query.value(fieldForw).toString();
-//         if (!(QDate::fromString(date, "d.MM.yyyy").dayOfYear() - QDate::currentDate().dayOfYear()
-//               < 0)
-//             || (QDate::fromString(date, "d.MM.yyyy").year() > QDate::currentDate().year())
-//             || state == "1")
-//             if (!(QTime::fromString(time, "hh:mm").hour() - QTime::currentTime().hour() <= 0
-//                   && QDate::fromString(date, "d.MM.yyyy").dayOfYear()
-//                          == QDate::currentDate().dayOfYear())
-//                 || state == "1")
-//                 arr.append(QJsonObject({{"state", state},
-//                                         {"time", time},
-//                                         {"name", name},
-//                                         {"surname", surname},
-//                                         {"patronymic", patronymic},
-//                                         {"type", type},
-//                                         {"forwarded", forw}}));
-//     }
-//     QVariantList list = arr.toVariantList();
-//     std::sort(list.begin(), list.end(), compare);
-//     arr = QJsonArray::fromVariantList(list);
-//     db.close();
-//     QJsonObject qjo = {{"datetime", QDateTime::currentDateTime().toMSecsSinceEpoch()},
-//                        {"data", arr}};
-//     return QJsonDocument(qjo);
-// }
+        sqlite3_finalize(stmt);
+    }
 
-// bool DBHelper::deleteObs(std::string date, std::string time)
-// {
-//     bool success;
-//     if (checkDateTime(date, time)) {
-//         //db.setDatabaseName("./calendar.sqlite");
-//         db.open();
-//         QSqlQuery query(db);
-//         query.prepare("SELECT * FROM calendar WHERE date = ? AND time = ? AND state = 1");
-//         query.bindValue(0, date);
-//         query.bindValue(1, time);
-//         query.exec();
-//         if (query.first()) {
-//             QSqlQuery query1(db);
-//             query1.prepare(
-//                 "UPDATE calendar SET name = NULL, surname = NULL, patronymic = NULL, type = NULL, "
-//                 "forwarded = NULL, state=0 WHERE date=? AND time=? AND state=1");
-//             query1.bindValue(0, date);
-//             query1.bindValue(1, time);
-//             success = query1.exec();
+    nlohmann::json qjo;
+    for (const auto &entry : hash) {
+        qjo[entry.first] = entry.second;
+    }
 
-//         } else
-//             success = false;
-//         db.close();
-//     } else {
-//         success = false;
-//     }
-//     return success;
-// }
+    sqlite3_close(db);
 
-// bool DBHelper::deleteTime(std::string date, std::string time)
-// {
-//     bool success;
-//     if (checkDateTime(date, time)) {
-//         //db.setDatabaseName("./calendar.sqlite");
-//         db.open();
-//         QSqlQuery query(db);
-//         query.prepare("SELECT * FROM calendar WHERE date = ? AND time = ? AND state=0");
-//         query.bindValue(0, date);
-//         query.bindValue(1, time);
-//         query.exec();
-//         if (query.first()) {
-//             QSqlQuery query1(db);
-//             query1.prepare("DELETE FROM calendar WHERE date = ? AND time = ? AND state=0");
-//             query1.bindValue(0, date);
-//             query1.bindValue(1, time);
-//             success = query1.exec();
-//         } else
-//             success = false;
-//         db.close();
-//     } else {
-//         success = false;
-//     }
-//     return success;
-// }
+    return qjo;
+}
+
+nlohmann::json DBHelper::getFree()
+{
+    if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
+        std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+    }
+
+    sqlite3_stmt* stmt;
+
+    std::string sqlRequest = "SELECT * FROM calendar";
+    std::unordered_map<std::string, std::multiset<std::string>> hash;
+    if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            const char* fieldDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+            const char* fieldTime = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+
+            if (isValidDateTime(fieldDate, fieldTime)){
+                hash[fieldDate].insert(fieldTime);
+            }
+        }
+
+        sqlite3_finalize(stmt);
+    }
+
+    nlohmann::json qjo;
+    for (const auto &entry : hash) {
+        json arr = json::array();
+        for (const auto &timestmp : entry.second) {
+            arr.push_back(timestmp);
+        }
+        qjo[entry.first] = arr;
+    }
+
+    sqlite3_close(db);
+
+    return qjo;
+}
+
+nlohmann::json DBHelper::getDay(std::string date)
+{
+
+    if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
+        std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_close(db);
+    }
+
+    sqlite3_stmt* stmt;
+
+    std::string sqlRequest = "SELECT * FROM calendar WHERE date = '" + date + "';";
+
+    json arr;
+
+    if(sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            int fieldState = sqlite3_column_int(stmt, 1);
+            const char* fieldTime = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+            const char* fieldName = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4));
+            const char* fieldSurname = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+            const char* fieldPatr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+            const char* fieldType = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
+            const char* fieldForw = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
+
+            //Почемну не могу вернуть nullptr
+            if (isValidDateTime(date, fieldTime) || fieldState == 1) {
+                arr.push_back({
+                    {"state", fieldState},
+                    {"time", fieldTime},
+                    {"name", fieldName != nullptr ? fieldName : "NULL"},
+                    {"surname", fieldSurname != nullptr ? fieldSurname : "NULL"},
+                    {"patronymic", fieldPatr != nullptr ? fieldPatr : "NULL"},
+                    {"type", fieldType != nullptr ? fieldType : "NULL"},
+                    {"forwarded", fieldForw != nullptr ? fieldForw : "NULL"}
+                });
+            }
+        }
+
+        sqlite3_finalize(stmt);
+    }
+
+    // Починить datetime и compare
+    // И ещё DateTime в функции выше, которое удалил
+    std::sort(arr.begin(), arr.end());
+    json result = {
+        {"datetime", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()},
+        {"data", arr}
+    };
+
+    sqlite3_close(db);
+    return result;
+}
+
+bool DBHelper::deleteObs(std::string date, std::string time)
+{
+    bool success = false;
+    if (checkDateTime(date, time)) {
+
+        if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
+            std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+            sqlite3_close(db);
+        }
+
+        sqlite3_stmt* stmt;
+
+        std::string sqlRequest = "SELECT * FROM calendar WHERE date = '" + date + "' AND time = '" + time + "' AND state = 1;";
+
+        if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                sqlite3_finalize(stmt);
+
+                std::string updateSql = "UPDATE calendar SET name = NULL, surname = NULL, patronymic = NULL, type = NULL, "
+                                        "forwarded = NULL, state=0 WHERE date= '" + date + "' AND time= '" + time + "' AND state=1;";
+
+                if (sqlite3_exec(db, updateSql.c_str(), NULL, NULL, NULL) == SQLITE_OK) {
+                    success = true;
+                }
+            }
+        }
+        
+        sqlite3_close(db);
+    }
+    return success;   
+}
+
+// Если сделать add и сразу delete, то работает через раз.
+bool DBHelper::deleteTime(std::string date, std::string time)
+{
+    bool success = false;
+    if (checkDateTime(date, time)) {
+
+        if (sqlite3_open("../data/calendar.sqlite", &db) != SQLITE_OK) {
+            std::cout << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
+            sqlite3_close(db);
+        }
+
+        sqlite3_stmt* stmt;
+
+        std::string sqlRequest = "SELECT * FROM calendar WHERE date = '" + date + "' AND time = '" + time + "' AND state = 0;";
+
+        if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
+            if (sqlite3_step(stmt) == SQLITE_ROW)
+            {
+                sqlite3_finalize(stmt);
+
+                std::string deleteSql = "DELETE FROM calendar WHERE date = '" + date + "' AND time = '" + time + "' AND state = 0;";
+
+                if (sqlite3_exec(db, deleteSql.c_str(), NULL, NULL, NULL) == SQLITE_OK) {
+                    success = true;
+                }
+            }
+        }
+        
+        sqlite3_close(db);
+    }
+    return success;
+}
