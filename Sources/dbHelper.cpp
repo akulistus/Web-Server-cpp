@@ -281,7 +281,7 @@ nlohmann::json DBHelper::getFree()
         sqlite3_finalize(stmt);
     }
 
-    nlohmann::json qjo;
+    nlohmann::json qjo = json({});
     for (const auto &entry : hash) {
         json arr = json::array();
         for (const auto &timestmp : entry.second) {
