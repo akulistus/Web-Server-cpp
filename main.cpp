@@ -1,5 +1,6 @@
 #include <iostream>
 #include <asio.hpp>
+#include <thread>
 #include <filesystem>
 #include "PrepareAnswer.hpp"
 
@@ -66,8 +67,12 @@ int main() {
     try {
         asio::io_context io_context;
         HttpServer server(io_context);
-        server.start();
-        io_context.run();
+        std::thread m_thread([&]()
+        {
+            server.start();
+            io_context.run();
+        });
+        m_thread.join();
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;
     }

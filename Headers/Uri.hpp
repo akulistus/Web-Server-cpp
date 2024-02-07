@@ -103,6 +103,8 @@ struct Uri
 
     bool isOk = true;
     searchIndex = isRelative ? 0 : searchIndex + 1;
+    if (searchIndex >= 10)
+      searchIndex = 0;
     size_t pathStartIndex = searchIndex;
     // try parse source
     if ((text_.size() > searchIndex + 1) && (text_[searchIndex] == '/') && (text_[searchIndex + 1] == '/'))

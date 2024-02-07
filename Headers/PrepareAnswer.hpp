@@ -104,45 +104,45 @@ public:
 //     void exe() override;
 // };
 
-// class exeGetObservation : public exeGet {
-// public:
-//     exeGetObservation(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeGetObservation : public exeGet {
+public:
+    exeGetObservation(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
-// class exeAddObservation : public exeGet {
-// public:
-//     exeAddObservation(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeAddObservation : public exeGet {
+public:
+    exeAddObservation(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
-// class exeGetObsState : public exeGet {
-// public:
-//     exeGetObsState(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeGetObsState : public exeGet {
+public:
+    exeGetObsState(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
-// class exeGetDate : public exeGet {
-// public:
-//     exeGetDate(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeGetDate : public exeGet {
+public:
+    exeGetDate(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
 class exeGetFree : public exeGet {
 public:
@@ -164,35 +164,35 @@ public:
 private:
 };
 
-// class exeChangeDay : public exeGet {
-// public:
-//     exeChangeDay(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeChangeDay : public exeGet {
+public:
+    exeChangeDay(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
-// class exeDeleteObs : public exeGet {
-// public:
-//     exeDeleteObs(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeDeleteObs : public exeGet {
+public:
+    exeDeleteObs(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
-// class exeDeleteTime : public exeGet {
-// public:
-//     exeDeleteTime(PrepareAnswer* ans)
-//         : exeGet(ans)
-//     {}
-//     void exe() override;
+class exeDeleteTime : public exeGet {
+public:
+    exeDeleteTime(PrepareAnswer* ans)
+        : exeGet(ans)
+    {}
+    void exe() override;
 
-// private:
-// };
+private:
+};
 
 //-----------------------------------------------------------------------------
 #endif // PEPAREANSWER_H

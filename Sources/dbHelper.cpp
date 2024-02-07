@@ -60,7 +60,7 @@ bool DBHelper::isValidDateTime(const std::string& date, const std::string& time)
     std::tm* localTime = std::localtime(&currentTime);
     
     if ( (dateStruct.tm_yday - localTime->tm_yday >= 0) || (dateStruct.tm_year > localTime->tm_year) ) {
-        if ((dateStruct.tm_hour >= localTime->tm_hour) && (dateStruct.tm_yday == localTime->tm_yday)) {
+        if (!(dateStruct.tm_hour - localTime->tm_hour <= 0 && dateStruct.tm_yday == localTime->tm_yday)) {
             std::cout << "here" << std::endl;
             return true;
         }
@@ -116,7 +116,7 @@ nlohmann::json DBHelper::getAll()
     sqlite3_stmt* stmt;
 
     std::string sqlRequest = "SELECT * FROM calendar";
-    json arr;
+    json arr = json::array();
 
     if(sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
         while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -135,11 +135,11 @@ nlohmann::json DBHelper::getAll()
                     {"state", fieldState},
                     {"date", fieldDate},
                     {"time", fieldTime},
-                    {"name", fieldName != nullptr ? fieldName : "NULL"},
-                    {"surname", fieldSurname != nullptr ? fieldSurname : "NULL"},
-                    {"patronymic", fieldPatr != nullptr ? fieldPatr : "NULL"},
-                    {"type", fieldType != nullptr ? fieldType : "NULL"},
-                    {"forwarded", fieldForw != nullptr ? fieldForw : "NULL"}
+                    {"name", fieldName ? fieldName : ""},
+                    {"surname", fieldSurname ? fieldSurname : ""},
+                    {"patronymic", fieldPatr ? fieldPatr : ""},
+                    {"type", fieldType ? fieldType : ""},
+                    {"forwarded", fieldForw ? fieldForw : ""}
                 });
             }
         }
@@ -165,7 +165,6 @@ bool DBHelper::add(std::string date, std::string time)
         sqlite3_stmt* stmt;
         if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
             if (sqlite3_step(stmt) != SQLITE_ROW) {
-                sqlite3_finalize(stmt);
 
                 std::string insertSql = "INSERT INTO calendar (state, date, time) VALUES (0, '" + date + "', '" + time + "');";
 
@@ -175,9 +174,8 @@ bool DBHelper::add(std::string date, std::string time)
             } else {
                 success = false;
             }
-            sqlite3_finalize(stmt);
         }
-
+        sqlite3_finalize(stmt);
         sqlite3_close(db);
     }
 
@@ -247,7 +245,7 @@ nlohmann::json DBHelper::getAllDates()
         sqlite3_finalize(stmt);
     }
 
-    nlohmann::json qjo;
+    nlohmann::json qjo = json({});
     for (const auto &entry : hash) {
         qjo[entry.first] = entry.second;
     }
@@ -307,7 +305,7 @@ nlohmann::json DBHelper::getDay(std::string date)
 
     std::string sqlRequest = "SELECT * FROM calendar WHERE date = '" + date + "';";
 
-    json arr;
+    json arr = json::array();
 
     if(sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
         while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -320,15 +318,16 @@ nlohmann::json DBHelper::getDay(std::string date)
             const char* fieldForw = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 8));
 
             //Почемну не могу вернуть nullptr
+            //Если просто нул, то осущь. запись
             if (isValidDateTime(date, fieldTime) || fieldState == 1) {
                 arr.push_back({
                     {"state", fieldState},
                     {"time", fieldTime},
-                    {"name", fieldName != nullptr ? fieldName : "NULL"},
-                    {"surname", fieldSurname != nullptr ? fieldSurname : "NULL"},
-                    {"patronymic", fieldPatr != nullptr ? fieldPatr : "NULL"},
-                    {"type", fieldType != nullptr ? fieldType : "NULL"},
-                    {"forwarded", fieldForw != nullptr ? fieldForw : "NULL"}
+                    {"name", fieldName ? fieldName : ""},
+                    {"surname", fieldSurname ? fieldSurname : ""},
+                    {"patronymic", fieldPatr ? fieldPatr : ""},
+                    {"type", fieldType ? fieldType : ""},
+                    {"forwarded", fieldForw ? fieldForw : ""}
                 });
             }
         }
@@ -338,7 +337,7 @@ nlohmann::json DBHelper::getDay(std::string date)
 
     // Починить datetime и compare
     // И ещё DateTime в функции выше, которое удалил
-    std::sort(arr.begin(), arr.end());
+    // std::sort(arr.begin(), arr.end());
     json result = {
         {"datetime", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()},
         {"data", arr}

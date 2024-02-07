@@ -7,17 +7,17 @@ PrepareAnswer::PrepareAnswer()
     m_exeGet["__err"] = new exeGet(this);
     m_exeGet["__file"] = new exeGetFile(this);
     // m_exeGet["/getDir"] = new exeGetDir(this);
-    // m_exeGet["/getObservations"] = new exeGetObservation(this);
-    // m_exeGet["/addObservation"] = new exeAddObservation(this);
-    // m_exeGet["/changeObsState"] = new exeGetObsState(this);
+    m_exeGet["/getObservations"] = new exeGetObservation(this);
+    m_exeGet["/addObservation"] = new exeAddObservation(this);
+    m_exeGet["/changeObsState"] = new exeGetObsState(this);
     m_exeGet["/getFree"] = new exeGetFree(this);
-    // m_exeGet["/deleteObs"] = new exeDeleteObs(this);
-    // m_exeGet["/deleteTime"] = new exeDeleteTime(this);
-    // m_exeGet["/getDay"] = new exeGetDate(this);
-    // m_exeGet["/changeDay"] = new exeChangeDay(this);
+    m_exeGet["/deleteObs"] = new exeDeleteObs(this);
+    m_exeGet["/deleteTime"] = new exeDeleteTime(this);
+    m_exeGet["/getDay"] = new exeGetDate(this);
+    m_exeGet["/changeDay"] = new exeChangeDay(this);
     m_exeGet["/getAllDates"] = new exeGetAllDates(this);
     m_ext["html"] = "Content-Type: text/html; charset=utf8;";
-    m_ext["json"] = "Content-Type: text/json; charset=utf8;";
+    m_ext["json"] = "Content-Type: application/json; charset=utf8;";
     m_ext["js"] = "Content-Type: text/javascript; charset=utf8;";
     m_ext["css"] = "Content-Type: text/css; charset=utf8;";
     m_ext["txt"] = "Content-Type: text/plain; charset=utf8";
@@ -28,7 +28,10 @@ PrepareAnswer::PrepareAnswer()
 
 Response *PrepareAnswer::exe(const std::string& query)
 {
-    m_uri = M_Uri::ParseRequest(query);
+    //Почему иногда приходит пустой запрос...
+    if (query != "") {
+        m_uri = M_Uri::ParseRequest(query);
+    }
 
     if (true) {
         if (m_exeGet.contains(m_uri.path)) {
@@ -55,7 +58,7 @@ void PrepareAnswer::jsonRet(const std::string& body)
 {
     m_resp.begin("200 OK");
     m_resp.insert("Access-Control-Allow-Origin:*");
-    m_resp.insert("Content-Type: text/json");
+    m_resp.insert("Content-Type: application/json");
     m_resp.end(body);
 }
 
@@ -154,10 +157,10 @@ void exeGetFile::exe()
 //     m_ans->jsonRet(doc.toJson());
 // }
 
-// void exeGetObservation::exe()
-// {
-//     m_ans->jsonRet(m_ans->db->getAll().toJson());
-// }
+void exeGetObservation::exe()
+{
+    m_ans->jsonRet(m_ans->db->getAll().dump());
+}
 
 void exeGetFree::exe()
 {
@@ -169,100 +172,129 @@ void exeGetAllDates::exe()
     m_ans->jsonRet(m_ans->db->getAllDates().dump());
 }
 
-// void exeGetDate::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date"))
-//         m_ans->jsonRet(m_ans->db->getDay(hash.find("date").value()).toJson());
-//     else
-//         m_ans->errRet("wrong args");
-// }
+void exeGetDate::exe()
+{
+    std::unordered_map<std::string, std::string>& query = m_uri->query;
 
-// void exeChangeDay::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date") && hash.contains("time[]")) {
-//         QStringList timeList = hash.values("time[]");
-//         QStringList allTime = {"09:00",
-//                                "10:00",
-//                                "11:00",
-//                                "12:00",
-//                                "13:00",
-//                                "14:00",
-//                                "15:00",
-//                                "16:00",
-//                                "17:00",
-//                                "18:00",
-//                                "19:00",
-//                                "20:00"};
-//         std::string date = hash.find("date").value();
-//         foreach (std::string time, allTime) {
-//             if (timeList.contains(time))
-//                 m_ans->db->add(date, time);
-//             else
-//                 m_ans->db->deleteTime(date, time);
-//         }
-//         m_ans->extRet("ok");
-//     } else
-//         m_ans->errRet("wrong args");
-// }
+    auto it = query.find("date");
+    if (it != query.end())
+    {
+        m_ans->jsonRet(m_ans->db->getDay(it->second).dump());
+    }
+    else
+    {
+        m_ans->errRet("wrong args");
+    }
+}
+void exeChangeDay::exe()
+{
+    std::unordered_map<std::string, std::string>& query = m_uri->query;
 
-// void exeAddObservation::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date") && hash.contains("time")) {
-//         bool success = m_ans->db->add(hash.find("date").value(), hash.find("time").value());
-//         if (success)
-//             m_ans->extRet("ok");
-//         else
-//             m_ans->errRet("SQL Error");
-//     } else
-//         m_ans->errRet("wrong args");
-// }
+    auto dateIt = query.find("date");
+    auto timeIt = query.find("time");
 
-// void exeGetObsState::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date") && hash.contains("time") && hash.contains("name")
-//         && hash.contains("surname") && hash.contains("patronymic") && hash.contains("type")
-//         && hash.contains("forwarded")) {
-//         bool success = m_ans->db->changeState(hash.find("name").value(),
-//                                               hash.find("surname").value(),
-//                                               hash.find("patronymic").value(),
-//                                               hash.find("type").value(),
-//                                               hash.find("date").value(),
-//                                               hash.find("time").value(),
-//                                               hash.find("forwarded").value());
-//         if (success)
-//             m_ans->extRet("ok");
-//         else
-//             m_ans->errRet("SQL Error");
-//     } else
-//         m_ans->errRet("wrong args");
-// }
+    if (dateIt != query.end() && timeIt != query.end())
+    {
+        const std::string& date = dateIt->second;
+        const std::vector<std::string>& timeList = split(timeIt->second, ',');
 
-// void exeDeleteObs::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date") && hash.contains("time")) {
-//         bool success = m_ans->db->deleteObs(hash.find("date").value(), hash.find("time").value());
-//         if (success)
-//             m_ans->extRet("ok");
-//         else
-//             m_ans->errRet("SQL Error");
-//     } else
-//         m_ans->errRet("wrong args");
-// }
+        std::vector<std::string> allTime = {"09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+                                               "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"};
+        
+        for (const auto& time: allTime)
+        {
+            if (std::find(timeList.begin(), timeList.end(), time) != timeList.end())
+            {
+                m_ans->db->add(date, time);
+            }
+            else
+            {
+                m_ans->db->deleteTime(date, time);
+            }
+        }
+        m_ans->extRet("ok");
+    }
+    else
+    {
+        m_ans->errRet("wrong args");
+    }
+}
 
-// void exeDeleteTime::exe()
-// {
-//     QMultiHash<std::string, std::string> &hash = m_query->getArgs();
-//     if (hash.contains("date") && hash.contains("time")) {
-//         bool success = m_ans->db->deleteTime(hash.find("date").value(), hash.find("time").value());
-//         if (success)
-//             m_ans->extRet("ok");
-//         else
-//             m_ans->errRet("SQL Error");
-//     } else
-//         m_ans->errRet("wrong args");
-// }
+void exeAddObservation::exe()
+{
+    std::unordered_map<std::string, std::string>& query = m_uri->query;
+
+    auto dateIt = query.find("date");
+    auto timeIt = query.find("time");
+
+    if (dateIt != query.end() && timeIt != query.end()) {
+        bool success = m_ans->db->add(dateIt->second, timeIt->second);
+        if (success)
+            m_ans->extRet("ok");
+        else
+            m_ans->errRet("SQL Error");
+    } else
+        m_ans->errRet("wrong args");
+}
+
+void exeGetObsState::exe()
+{
+    std::unordered_map<std::string, std::string>& query = m_uri->query;
+
+    auto dateIt = query.find("date");
+    auto timeIt = query.find("time");
+    auto nameIt = query.find("name");
+    auto surnameIt = query.find("surname");
+    auto patronymicIt = query.find("patronymic");
+    auto typeIt = query.find("type");
+    auto forwardedIt = query.find("forwarded");
+
+    if (nameIt != query.end()) {
+        bool success = m_ans->db->changeState(nameIt->second,
+                                              surnameIt->second,
+                                              patronymicIt->second,
+                                              typeIt->second,
+                                              dateIt->second,
+                                              timeIt->second,
+                                              forwardedIt->second);
+        if (success)
+            m_ans->extRet("ok");
+        else
+            m_ans->errRet("SQL Error");
+    } else
+        m_ans->errRet("wrong args");
+}
+
+void exeDeleteObs::exe()
+{
+    std::unordered_map<std::string, std::string> query = m_uri->query;
+
+    auto dateIt = query.find("date");
+    auto timeIt = query.find("time");
+
+    if (dateIt != query.end() && timeIt != query.end()) {
+        bool success = m_ans->db->deleteObs(dateIt->second, timeIt->second);
+        if (success)
+            m_ans->extRet("ok");
+        else
+            m_ans->errRet("SQL Error");
+    } else
+        m_ans->errRet("wrong args");
+}
+
+void exeDeleteTime::exe()
+{
+    std::unordered_map<std::string, std::string> query = m_uri->query;
+
+    auto dateIt = query.find("date");
+    auto timeIt = query.find("time");
+
+    if (dateIt != query.end() && timeIt != query.end()) {
+        bool success = m_ans->db->deleteTime(dateIt->second, timeIt->second);
+        if (success)
+            m_ans->extRet("ok");
+        else
+            m_ans->errRet("SQL Error");
+    } else
+        m_ans->errRet("wrong args");
+}
