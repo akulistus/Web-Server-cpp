@@ -20,6 +20,8 @@ set(PROJECT_HEADERS
   ${PROJECT_HEADERS_DIR_PATH}/dbHelper.hpp
   ${PROJECT_HEADERS_DIR_PATH}/ParseQuerry.hpp
   ${PROJECT_HEADERS_DIR_PATH}/SimpleServer.hpp
+  ${PROJECT_HEADERS_DIR_PATH}/HttpServer.hpp
+  ${PROJECT_HEADERS_DIR_PATH}/HttpConnection.hpp
   ${PROJECT_HEADERS_DIR_PATH}/PrepareAnswer.hpp
 
 
@@ -31,6 +33,8 @@ set(PROJECT_SOURCES
   ${PROJECT_SRC_DIR_PATH}/dbHelper.cpp
   ${PROJECT_SRC_DIR_PATH}/ParseQuerry.cpp
   ${PROJECT_SRC_DIR_PATH}/SimpleServer.cpp
+  ${PROJECT_SRC_DIR_PATH}/HttpServer.cpp
+  ${PROJECT_SRC_DIR_PATH}/HttpConnection.cpp
   ${PROJECT_SRC_DIR_PATH}/PrepareAnswer.cpp
 )
 

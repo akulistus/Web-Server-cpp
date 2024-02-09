@@ -268,11 +268,15 @@ nlohmann::json DBHelper::getFree()
     std::unordered_map<std::string, std::multiset<std::string>> hash;
     if (sqlite3_prepare_v2(db, sqlRequest.c_str(), -1, &stmt, NULL) == SQLITE_OK) {
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            const char* fieldDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
-            const char* fieldTime = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+            int fieldState = sqlite3_column_int(stmt, 1);
+            if (fieldState == 0)
+            {
+                const char* fieldDate = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                const char* fieldTime = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
 
-            if (isValidDateTime(fieldDate, fieldTime)){
-                hash[fieldDate].insert(fieldTime);
+                if (isValidDateTime(fieldDate, fieldTime)){
+                    hash[fieldDate].insert(fieldTime);
+                }
             }
         }
 

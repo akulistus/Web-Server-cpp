@@ -1,32 +1,58 @@
 // #include "SimpleServer.hpp"
 
-// SimpleServer::SimpleServer(asio::io_context& ioContext, int port) : ioContext(ioContext), acceptor(ioContext, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)), socket(ioContext)
-// {
+// HttpServer::HttpServer(asio::io_context& io_context, int port)
+//     : acceptor_(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)),
+//       socket_(io_context) {}
+
+// void HttpServer::start() {
+//     doAccept();
 // }
 
-// void SimpleServer::handleRead(std::shared_ptr<asio::ip::tcp::socket> socket, const std::error_code& error, std::vector<char>& buffer, std::size_t bytes_transferred) {
-//     if (!error) {
-//         Response* rsp = prepareAnswer.exe({buffer.data(), bytes_transferred});
-//         asio::async_write(*socket, asio::buffer(rsp->res.data(), rsp->res.size()),
-//                           [this, socket](const std::error_code& write_error, std::size_t) {
-//                               handleWrite(socket, write_error);
-//                           });
-//     }
+// void HttpServer::doAccept() {
+//     acceptor_.async_accept(
+//         [this](std::error_code ec, asio::ip::tcp::socket socket)
+//         {
+//             if (!ec) {
+//                 // Create a new connection and start handling it
+//                 std::make_shared<HttpConnection>(socket, prepareAnswer)->start();
+//             }
+
+//             // Continue accepting more connections
+//             doAccept();
+//         });
 // }
 
-// void SimpleServer::handleRead(std::shared_ptr<asio::ip::tcp::socket> socket, const std::error_code& error, std::size_t bytes_transferred) {
-//     if (!error) {
-//         Response* rsp = prepareAnswer.exe({socket->data(), bytes_transferred});
-//         asio::async_write(*socket, asio::buffer(rsp->res.data(), rsp->res.size()),
-//                           [this, socket](const std::error_code& write_error, std::size_t) {
-//                               handleWrite(socket, write_error, 0);
-//                           });
-//     }
+// HttpConnection::HttpConnection(asio::ip::tcp::socket socket, PrepareAnswer& prepareAnswer)
+//     : socket_(std::move(socket)), prepareAnswer(prepareAnswer) {}
+
+// void HttpConnection::start() {
+//     // Start reading from the client
+//     doRead();
 // }
 
-// void SimpleServer::handleWrite(std::shared_ptr<asio::ip::tcp::socket> socket, const std::error_code& error, std::size_t) {
-//     if (!error) {
-//         socket->close();
-//         std::cout << "Connection closed." << std::endl;
-//     }
+// void HttpConnection::doRead() {
+//     auto self = shared_from_this();
+//     socket_.async_read_some(asio::buffer(m_requestBuffer),
+//         [this, self](std::error_code errorCode, size_t transferredBytesCount)
+//         {
+//             if (!errorCode) {
+//                 // Process the request
+//                 response = prepareAnswer.exe(std::string(m_requestBuffer.begin(), m_requestBuffer.begin() + transferredBytesCount))->res;
+
+//                 // Start writing the response
+//                 doWrite();
+//             }
+//         });
+// }
+
+// void HttpConnection::doWrite() {
+//     auto self = shared_from_this();
+//     asio::async_write(socket_, asio::buffer(response),
+//         [this, self](std::error_code writeEc, std::size_t /*bytesWritten*/)
+//         {
+//             if (!writeEc) {
+//                 // Close the socket after writing
+//                 socket_.close();
+//             }
+//         });
 // }
